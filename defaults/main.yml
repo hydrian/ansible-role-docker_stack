@@ -1,2 +1,5 @@
 ---
-
+project_cache_dir: "/var/cache/docker-compose/{{ project_name }}"
+compose_files:
+  - 'docker-compose.yml'
+deploy_env: 'prod'

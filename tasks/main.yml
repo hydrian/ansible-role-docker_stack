@@ -1,2 +1,42 @@
 ---
-
+- name: 'Creating docker-compose cache directory'
+  ansible.builtin.file:
+    path: "{{ project_cache_dir }}"
+    state: "directory"
+    mode: "770"
+    owner: "root"
+    group: "docker"
+- name: "Checking to see if existing compose exists"
+  ansible.builtin.stat:
+    path: "{{ project_cache_dir }}/docker-compose.yml"
+  register: old_docker_compose
+#- name: "Removing old stack"
+#  community.docker.docker_compose_v2:
+#    project_name: "{{ project_name }}"
+#    project_src: "{{ project_cache_dir }}"
+#    state: 'absent'
+#  when: old_docker_compose.stat.exists == true
+- name: "Copy docker-compose file to cache directory"
+  ansible.builtin.copy:
+    src: "./{{ item }}"
+    dest: "{{ project_cache_dir }}/{{ item }}"
+  loop: "{{ compose_files }}"
+- name: "Creating env file"
+  ansible.builtin.ini_file:
+    path: "{{ project_cache_dir }}/{{ deploy_env }}.env"
+    create: true
+    no_extra_spaces: true
+    section: null
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    exclusive: true
+  loop: "{{ env_vars }}"
+- name: "Deploying docker compose"
+  community.docker.docker_compose_v2:
+    project_name: "{{ project_name }}"
+    project_src: "{{ project_cache_dir }}"
+    recreate: 'always'
+    state: "present"
+    env_files:
+      - "{{ deploy_env }}.env"
+  
